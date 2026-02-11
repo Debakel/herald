@@ -3,7 +3,7 @@ Publish upcoming events from your `.ics` calendar to WhatsApp, Mastodon, and oth
 
 ## Installation
 ```
-pip install ... # todo
+pip install git+https://github.com/Debakel/herald.git
 ```
 
 ## Usage
