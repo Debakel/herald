@@ -31,7 +31,7 @@ class TestRenderTemplateString:
         """Test rendering a basic template."""
         template = "Events: {{ count }}"
 
-        result = templating.render(template, sample_events)
+        result = templating.render_multiple(template, sample_events)
 
         assert result == "Events: 2"
 
@@ -39,7 +39,7 @@ class TestRenderTemplateString:
         """Test rendering an event list."""
         template = "{% for event in events %}{{ event.title }}\n{% endfor %}"
 
-        result = templating.render(template, sample_events)
+        result = templating.render_multiple(template, sample_events)
 
         assert result == "Team Meeting\nCode Review\n"
 
@@ -52,7 +52,7 @@ class TestRenderTemplateString:
             "{% endfor %}"
         )
 
-        result = templating.render(template, sample_events)
+        result = templating.render_multiple(template, sample_events)
 
         assert result == "Team Meeting (Room A)\nCode Review\n"
 
@@ -60,8 +60,16 @@ class TestRenderTemplateString:
         """Test rendering the date."""
         template = "Date: {{ today | datefmt }}"
 
-        result = templating.render(template, sample_events, locale="de")
+        result = templating.render_multiple(template, sample_events, locale="de")
         assert result == "Date: 01.02.2000, 12:30:00"
 
-        result = templating.render(template, sample_events, locale="en")
+        result = templating.render_multiple(template, sample_events, locale="en")
         assert result == "Date: Feb 1, 2000, 12:30:00 PM"
+
+    def test_render_single_event(self) -> None:
+        template = "{{ event.title }} at {{ event.location }}"
+        event = sample_events[0]
+
+        result = templating.render_single(template, event)
+
+        assert result == "Team Meeting at Room A"

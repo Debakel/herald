@@ -4,7 +4,10 @@ from datetime import timedelta
 
 import pytest
 
+from pydantic import ValidationError
+
 from herald.config import ConfigError, HeraldConfig, PublisherBuilder
+from herald.publish import PublishMode
 from herald.targets.mastodon import MastodonTarget
 from herald.targets.telegram import TelegramTarget
 from tests.tempfile import TemporaryTextFile
@@ -20,11 +23,13 @@ class TestBuildPublisher:
                     {
                         "type": "mastodon",
                         "template": template.name,
+                        "publish_mode": PublishMode.SINGLE,
                         "config": {
                             "instance_url": "https://a.social",
                             "access_token": "tok-a",
                             "client_id": "123",
                             "client_secret": "secret",
+
                         },
                     },
                     {
@@ -44,9 +49,14 @@ class TestBuildPublisher:
         assert publisher.source == "/tmp/cal.ics"
         assert publisher.lookahead == timedelta(minutes=30)
         assert len(publisher.entries) == 2
+
         assert publisher.entries[0].template == "template 123"
-        assert publisher.entries[1].template == "template 123"
+        assert publisher.entries[0].publish_mode == PublishMode.SINGLE
         assert isinstance(publisher.entries[0].target, MastodonTarget)
+
+
+        assert publisher.entries[1].template == "template 123"
+        assert publisher.entries[1].publish_mode == PublishMode.GROUPED
         assert isinstance(publisher.entries[1].target, TelegramTarget)
         assert publisher.entries[1].target.bot_token == "bot-tok"
 

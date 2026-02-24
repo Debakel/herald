@@ -5,7 +5,7 @@ from pathlib import Path
 
 import freezegun
 
-from herald.publish import Publisher, TargetEntry
+from herald.publish import Publisher, PublishMode, TargetEntry
 from herald.targets.base import FakeTarget
 
 TESTDATA = Path(__file__).parent / "testdata"
@@ -33,16 +33,16 @@ class TestPublisher:
         publisher = Publisher(
             source=str(TESTDATA / "multiple-events.ics"),
             entries=[
-                TargetEntry(target_a, "{{ count }} events"),
-                TargetEntry(target_b, "{{ count }} evénements"),
+                TargetEntry(target_a, "{% for event in events %}{{ event.title }}\n{% endfor %}", publish_mode=PublishMode.GROUPED),
+                TargetEntry(target_b, "{{ event.title }}", publish_mode=PublishMode.SINGLE),
             ],
             lookahead=timedelta(hours=24),
         )
 
         publisher.publish()
 
-        assert target_a.published_messages == ["2 events"]
-        assert target_b.published_messages == ["2 evénements"]
+        assert target_a.published_messages == ["Team Meeting\nProduct Demo\n"]
+        assert target_b.published_messages == ["Team Meeting", "Product Demo"]
 
     def test_lookahead_window_filters_events(self) -> None:
         target = FakeTarget()

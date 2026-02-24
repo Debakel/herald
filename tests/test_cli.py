@@ -13,7 +13,6 @@ from tests.tempfile import TemporaryTextFile
 
 class CLITestCase(unittest.TestCase):
     def setUp(self):
-
         self.template_file_1 = TemporaryTextFile(
             text=textwrap.dedent("""
         {% for event in events %}
@@ -22,12 +21,12 @@ class CLITestCase(unittest.TestCase):
         """)
         )
         self.template_file_2 = TemporaryTextFile(
-            text="{% for event in events %}{{ event.title }}{% endfor %}"
+            text="{{ event.title }}"
         )
 
         config = textwrap.dedent("""\
             source: {source}
-            lookahead_window: 24h
+            lookahead_window: 14d
             targets:
               - type: dryrun
                 template: {template_file_1}
@@ -35,6 +34,7 @@ class CLITestCase(unittest.TestCase):
                   name: target-1
               - type: dryrun
                 template: {template_file_2}
+                publish_mode: single
                 config:
                   name: target-2
         """).format(
@@ -55,17 +55,18 @@ class CLITestCase(unittest.TestCase):
         runner = CliRunner()
         result = runner.invoke(app, ["--config", self.config_file.name])
 
+        expected = ('target-1: \n'
+                    '\n'
+                    '- `2026-02-02 10:00:00+00:00` — Weekly Standup (in Virtual)\n'
+                    '\n'
+                    '- `2026-02-09 10:00:00+00:00` — Weekly Standup (in Virtual)\n'
+                    '\n'
+                    'target-2: Weekly Standup\n'
+                    'target-2: Weekly Standup\n')
+        self.assertEqual(result.output, expected)
+
         self.assertEqual(
             result.exit_code,
             0,
             msg={"exc_info": result.exc_info, "stdout": result.stdout},
         )
-
-        expected = (
-            "target-1: \n"
-            "\n"
-            "- `2026-02-02 10:00:00+00:00` — Weekly Standup (in Virtual)\n"
-            "\n"
-            "target-2: Weekly Standup\n"
-        )
-        self.assertEqual(result.output, expected)

@@ -44,7 +44,7 @@ def main(
         from herald.targets.dryrun import DryRunTarget
 
         publisher.entries = [
-            TargetEntry(DryRunTarget(name=e.target.__class__.__name__), e.template)
+            TargetEntry(target=DryRunTarget(name=e.target.__class__.__name__), template=e.template, publish_mode=e.publish_mode)
             for e in publisher.entries
         ]
 

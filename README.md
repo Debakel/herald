@@ -22,6 +22,7 @@ lookahead_window: "24h"          # how far ahead to look (e.g. 30m, 12h, 7d)
 targets:
   - type: mastodon
     template: templates/mastodon.txt
+    publish_mode: single    # optional (default: grouped)
     config:
       instance_url: "https://mastodon.social"
       client_id: "..."
@@ -38,8 +39,21 @@ targets:
 
 ## Templates
 
-Templates use [Jinja2](https://jinja.palletsprojects.com/) syntax:
+Templates use [Jinja2](https://jinja.palletsprojects.com/) syntax. The available variables depend on the `publish_mode` setting.
 
+### `grouped` mode (default)
+
+All events are published in a single post.
+
+**Context variables:**
+
+| Variable | Type | Description                                                        |
+|---|---|--------------------------------------------------------------------|
+| `events` | list | [Event](./src/herald/domain/event.py) objects sorted by start time |
+| `count` | int | Number of events                                                   |
+| `today` | datetime | Current datetime                                                   |
+
+**Example template:**
 ```jinja
 Events for {{ today | datefmt }}
 
@@ -48,16 +62,25 @@ Events for {{ today | datefmt }}
 {% endfor %}
 ```
 
-**Available variables:**
+### `single` mode
+
+Each event is published as its own post.
+
+**Context variables:**
 
 | Variable | Type | Description                                                        |
 |---|---|--------------------------------------------------------------------|
-| `events` | list | [Event](./src/herald/domain/event.py) objects sorted by start time |
-| `count` | int | Number of events                                                   |
+| `event` | Event | A single [Event](./src/herald/domain/event.py) object             |
 | `today` | datetime | Current datetime                                                   |
 
+**Example template:**
 
-**Template filters:** 
+```jinja
+{{ event.start | datefmt }}: {{ event.title }}
+{% if event.location %}Location: {{ event.location }}{% endif %}
+```
+
+### Template filters
 - `datefmt` formats a datetime using Babel locale formatting.
 
 ## Deployment

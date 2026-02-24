@@ -6,7 +6,7 @@ import yaml
 from pydantic import BaseModel
 
 from herald.domain.window import parse_window
-from herald.publish import Publisher, TargetEntry
+from herald.publish import Publisher, PublishMode, TargetEntry
 from herald.targets.registry import target_registry
 
 __all__ = ["ConfigError", "PublisherBuilder"]
@@ -24,6 +24,7 @@ class HeraldConfig(BaseModel):
 class TargetConfig(BaseModel):
     type: str
     template: Path
+    publish_mode: PublishMode = PublishMode.GROUPED
     config: dict = {}
 
 
@@ -52,7 +53,13 @@ class PublisherBuilder:
 
             target = target_cls(**tc.config)
             template = tc.template.read_text()
-            entries.append(TargetEntry(target=target, template=template))
+            entries.append(
+                TargetEntry(
+                    target=target,
+                    template=template,
+                    publish_mode=tc.publish_mode,
+                )
+            )
 
         return Publisher(
             source=config.source,
