@@ -60,3 +60,40 @@ class TestPublisher:
         assert "Product Demo" in message
         assert "Code Review" in message
         assert "Sprint Planning" in message
+
+    def test_single_post_mode_publishes_one_message_per_event(self) -> None:
+        target = FakeTarget()
+        template = "{{ event.title }}"
+        publisher = Publisher(
+            source=str(TESTDATA / "multiple-events.ics"),
+            entries=[TargetEntry(target, template, post_mode="single")],
+            lookahead=timedelta(hours=24),
+        )
+
+        publisher.publish()
+
+        assert len(target.published_messages) == 2
+        assert target.published_messages[0] == "Team Meeting"
+        assert target.published_messages[1] == "Product Demo"
+
+    def test_single_and_grouped_targets_together(self) -> None:
+        single_target = FakeTarget()
+        grouped_target = FakeTarget()
+        publisher = Publisher(
+            source=str(TESTDATA / "multiple-events.ics"),
+            entries=[
+                TargetEntry(single_target, "{{ event.title }}", post_mode="single"),
+                TargetEntry(grouped_target, "{{ count }} events", post_mode="grouped"),
+            ],
+            lookahead=timedelta(hours=24),
+        )
+
+        publisher.publish()
+
+        assert len(single_target.published_messages) == 2
+        assert len(grouped_target.published_messages) == 1
+        assert grouped_target.published_messages[0] == "2 events"
+
+    def test_grouped_is_default_post_mode(self) -> None:
+        entry = TargetEntry(FakeTarget(), "test")
+        assert entry.post_mode == "grouped"

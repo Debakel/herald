@@ -60,3 +60,40 @@ class TestBuildPublisher:
 
             with pytest.raises(ConfigError, match="Unknown target type 'slack'"):
                 PublisherBuilder.from_config(cfg)
+
+    def test_post_mode_passed_to_entry(self) -> None:
+        with TemporaryTextFile("tpl") as template:
+            cfg = HeraldConfig(
+                source="/tmp/cal.ics",
+                lookahead_window="24h",
+                targets=[
+                    {
+                        "type": "dryrun",
+                        "template": template.name,
+                        "post_mode": "single",
+                        "config": {"name": "test"},
+                    },
+                ],
+            )
+
+            publisher = PublisherBuilder.from_config(cfg)
+
+        assert publisher.entries[0].post_mode == "single"
+
+    def test_post_mode_defaults_to_grouped(self) -> None:
+        with TemporaryTextFile("tpl") as template:
+            cfg = HeraldConfig(
+                source="/tmp/cal.ics",
+                lookahead_window="24h",
+                targets=[
+                    {
+                        "type": "dryrun",
+                        "template": template.name,
+                        "config": {"name": "test"},
+                    },
+                ],
+            )
+
+            publisher = PublisherBuilder.from_config(cfg)
+
+        assert publisher.entries[0].post_mode == "grouped"

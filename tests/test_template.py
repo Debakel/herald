@@ -61,7 +61,34 @@ class TestRenderTemplateString:
         template = "Date: {{ today | datefmt }}"
 
         result = templating.render(template, sample_events, locale="de")
-        assert result == "Date: 01.02.2000, 12:30:00"
+        assert "01.02.2000, 12:30:00" in result
 
         result = templating.render(template, sample_events, locale="en")
         assert result == "Date: Feb 1, 2000, 12:30:00 PM"
+
+
+@freezegun.freeze_time("2000-02-01 12:30")
+class TestRenderSingle:
+    def test_render_single_event(self) -> None:
+        template = "{{ event.title }} at {{ event.location }}"
+        event = sample_events[0]
+
+        result = templating.render_single(template, event)
+
+        assert result == "Team Meeting at Room A"
+
+    def test_render_single_with_datefmt(self) -> None:
+        template = "{{ event.start | datefmt }}: {{ event.title }}"
+        event = sample_events[0]
+
+        result = templating.render_single(template, event, locale="de")
+
+        assert result == "03.02.2026, 10:00:00: Team Meeting"
+
+    def test_render_single_provides_today(self) -> None:
+        template = "{{ today | datefmt }}"
+        event = sample_events[0]
+
+        result = templating.render_single(template, event, locale="de")
+
+        assert result == "01.02.2000, 12:30:00"

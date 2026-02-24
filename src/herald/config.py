@@ -24,6 +24,7 @@ class HeraldConfig(BaseModel):
 class TargetConfig(BaseModel):
     type: str
     template: Path
+    post_mode: str = "grouped"
     config: dict = {}
 
 
@@ -52,7 +53,7 @@ class PublisherBuilder:
 
             target = target_cls(**tc.config)
             template = tc.template.read_text()
-            entries.append(TargetEntry(target=target, template=template))
+            entries.append(TargetEntry(target=target, template=template, post_mode=tc.post_mode))
 
         return Publisher(
             source=config.source,

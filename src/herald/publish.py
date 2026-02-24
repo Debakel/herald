@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 class TargetEntry:
     target: Target
     template: str
+    post_mode: str = "grouped"
 
 
 class Publisher:
@@ -38,5 +39,10 @@ class Publisher:
             return
 
         for entry in self.entries:
-            message = templating.render(entry.template, events)
-            entry.target.publish(message)
+            if entry.post_mode == "single":
+                for event in events:
+                    message = templating.render_single(entry.template, event)
+                    entry.target.publish(message)
+            else:
+                message = templating.render(entry.template, events)
+                entry.target.publish(message)
