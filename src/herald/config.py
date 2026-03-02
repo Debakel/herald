@@ -1,11 +1,11 @@
 """Configuration loading, validation, and Publisher construction."""
-
+from datetime import datetime
 from pathlib import Path
 
 import yaml
 from pydantic import BaseModel
 
-from herald.domain.window import parse_window
+from herald.domain.window import TimeWindow, WindowParseError, parse_window
 from herald.publish import Publisher, PublishMode, TargetEntry
 from herald.targets.registry import target_registry
 
@@ -17,8 +17,23 @@ class ConfigError(Exception): ...
 
 class HeraldConfig(BaseModel):
     source: str
-    lookahead_window: str
+    window: "WindowConfig"
     targets: list["TargetConfig"]
+
+
+class WindowConfig(BaseModel):
+    after: str = "0m"
+    before: str
+
+    def as_timewindow(self) -> TimeWindow:
+        now = datetime.now()
+        try:
+            after = parse_window(self.after)
+            before = parse_window(self.before)
+        except WindowParseError as e:
+            raise ConfigError(str(e)) from e
+
+        return TimeWindow(start=now + after, end=now + before)
 
 
 class TargetConfig(BaseModel):
@@ -64,5 +79,5 @@ class PublisherBuilder:
         return Publisher(
             source=config.source,
             entries=entries,
-            lookahead=parse_window(config.lookahead_window),
+            time_window=config.window.as_timewindow()
         )

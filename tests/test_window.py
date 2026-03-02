@@ -1,10 +1,10 @@
 """Tests for window parsing and time range calculation."""
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import pytest
 
-from herald.domain import WindowParseError, parse_window
+from herald.domain import TimeWindow, WindowParseError, parse_window
 
 
 class TestParseWindow:
@@ -24,6 +24,7 @@ class TestParseWindow:
 
     def test_parse_minutes(self) -> None:
         """Test parsing minute specifications."""
+        assert parse_window("0m") == timedelta(minutes=0)
         assert parse_window("1m") == timedelta(minutes=1)
         assert parse_window("30m") == timedelta(minutes=30)
         assert parse_window("90m") == timedelta(minutes=90)
@@ -54,3 +55,20 @@ class TestParseWindow:
 
         with pytest.raises(WindowParseError):
             parse_window("")
+
+
+class TestTimeWindow:
+    def test_valid_window(self) -> None:
+        start = datetime(2026, 2, 3, 8, 0)
+        end = datetime(2026, 2, 3, 8, 30)
+        tw = TimeWindow(start=start, end=end)
+
+        assert tw.start == start
+        assert tw.end == end
+
+    def test_invalid_window(self) -> None:
+        start = datetime(2026, 2, 3, 8, 0)
+        end = datetime(2026, 2, 3, 8, 0)
+
+        with pytest.raises(ValueError, match="'end' must be greater than 'start'"):
+            TimeWindow(start=start, end=end)

@@ -1,11 +1,22 @@
 """Window parsing and time range calculation."""
 
+from dataclasses import dataclass
 import re
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 
 class WindowParseError(ValueError):
     """Raised when a window specification cannot be parsed."""
+
+@dataclass(frozen=True)
+class TimeWindow:
+    start: datetime
+    end: datetime
+
+    def __post_init__(self) -> None:
+        if self.end <= self.start:
+            raise ValueError("'end' must be greater than 'start'")
+
 
 
 def parse_window(window_spec: str) -> timedelta:
