@@ -17,7 +17,9 @@ herald --config config.yaml --dry-run    # preview without publishing
 
 ```yaml
 source: "/path/to/calendar.ics"  # or https://example.com/calendar.ics
-lookahead_window: "24h"          # how far ahead to look (e.g. 30m, 12h, 7d)
+window:
+  before: "24h"                  # required: end of window (e.g. 30m, 12h, 7d)
+  after: "0m"                    # optional: start of window (default: now)
 
 targets:
   - type: mastodon
@@ -35,6 +37,14 @@ targets:
       bot_token: "..."
       chat_id: "..."
       parse_mode: "HTML"  # optional (default: HTML; also: Markdown, MarkdownV2)
+```
+
+Example for a shifted window (from now+3 days to now+5 days):
+
+```yaml
+window:
+  after: "3d"
+  before: "5d"
 ```
 
 ## Templates

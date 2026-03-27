@@ -1,12 +1,12 @@
 """Tests for configuration loading, validation, and Publisher construction."""
 
-from datetime import timedelta
+from datetime import datetime
 
 import pytest
 
-from pydantic import ValidationError
+import freezegun
 
-from herald.config import ConfigError, HeraldConfig, PublisherBuilder
+from herald.config import ConfigError, HeraldConfig, PublisherBuilder, WindowConfig
 from herald.publish import PublishMode
 from herald.targets.mastodon import MastodonTarget
 from herald.targets.telegram import TelegramTarget
@@ -14,11 +14,12 @@ from tests.tempfile import TemporaryTextFile
 
 
 class TestBuildPublisher:
+    @freezegun.freeze_time("2026-02-03 08:00")
     def test_build(self) -> None:
         with TemporaryTextFile("template 123") as template:
             cfg = HeraldConfig(
                 source="/tmp/cal.ics",
-                lookahead_window="30m",
+                window={"before": "30m"},
                 targets=[
                     {
                         "type": "mastodon",
@@ -47,7 +48,8 @@ class TestBuildPublisher:
             publisher = PublisherBuilder.from_config(cfg)
 
         assert publisher.source == "/tmp/cal.ics"
-        assert publisher.lookahead == timedelta(minutes=30)
+        assert publisher.time_window.start == datetime(2026, 2, 3, 8, 0)
+        assert publisher.time_window.end == datetime(2026, 2, 3, 8, 30)
         assert len(publisher.entries) == 2
 
         assert publisher.entries[0].template == "template 123"
@@ -64,9 +66,19 @@ class TestBuildPublisher:
         with TemporaryTextFile("tpl") as template:
             cfg = HeraldConfig(
                 source="/tmp/cal.ics",
-                lookahead_window="24h",
+                window={"before": "24h"},
                 targets=[{"type": "slack", "template": template.name, "config": {}}],
             )
 
             with pytest.raises(ConfigError, match="Unknown target type 'slack'"):
                 PublisherBuilder.from_config(cfg)
+
+
+class TestWindowConfig:
+    @freezegun.freeze_time("2026-02-03 08:00")
+    def test_as_timewindow(self) -> None:
+        window = WindowConfig(before="30m")
+        time_window = window.as_timewindow()
+
+        assert time_window.start == datetime(2026, 2, 3, 8, 0)
+        assert time_window.end == datetime(2026, 2, 3, 8, 30)

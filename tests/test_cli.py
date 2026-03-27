@@ -26,7 +26,8 @@ class CLITestCase(unittest.TestCase):
 
         config = textwrap.dedent("""\
             source: {source}
-            lookahead_window: 14d
+            window:
+              before: 14d
             targets:
               - type: dryrun
                 template: {template_file_1}

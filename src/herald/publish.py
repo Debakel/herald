@@ -1,11 +1,11 @@
 import logging
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from dataclasses import dataclass
 from enum import Enum
 
+from herald import templating
+from herald.domain.window import TimeWindow
 from herald.repo import EventRepository
 from herald.targets import Target
-from herald import templating
 
 logger = logging.getLogger(__name__)
 
@@ -28,25 +28,27 @@ class Publisher:
         self,
         source: str,
         entries: list[TargetEntry],
-        lookahead: timedelta,
+        time_window: TimeWindow,
     ):
         """
         :param source: Path or URL to the iCal source file
         :param entries: List of targets to publish
-        :param lookahead: Time period to include
+        :param time_window: Absolute time window used to query calendar events
         """
 
         self.source = source
         self.entries = entries
-        self.lookahead = lookahead
+        self.time_window = time_window
         self.repo = EventRepository(source=self.source)
 
     def publish(self):
-        now = datetime.now()
-        events = self.repo.list(start=now, end=now + self.lookahead)
+        events = self.repo.list(
+            start=self.time_window.start,
+            end=self.time_window.end,
+        )
 
         if not events:
-            logger.info("No events found in the lookahead window")
+            logger.info("No events found in the configured window")
             return
 
         for entry in self.entries:
